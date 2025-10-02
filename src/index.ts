@@ -18,7 +18,7 @@ import {
 
 // Import tools
 import { validateAdsTxtQuick, validateAdsTxt } from './tools/validate.js';
-import { optimizeAdsTxt } from './tools/optimize.js';
+import { optimizeAdsTxt, optimizeAdsTxtByDomain } from './tools/optimize.js';
 import { getAdsTxtCache, getDomainInfo, getBatchDomainInfo } from './tools/domain.js';
 import {
   getSellersJson,
@@ -105,6 +105,32 @@ const tools = [
         },
       },
       required: ['content'],
+    },
+  },
+  {
+    name: 'optimize_adstxt_by_domain',
+    description:
+      'Optimize ads.txt by domain (automatically fetches from cache). More efficient than fetching content separately. Reduces latency and data transfer.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        domain: {
+          type: 'string',
+          description: 'Publisher domain to optimize',
+        },
+        level: {
+          type: 'string',
+          enum: ['level1', 'level2'],
+          description: 'Optimization level (default: level1)',
+          default: 'level1',
+        },
+        force: {
+          type: 'boolean',
+          description: 'Force refresh from source before optimizing (default: false)',
+          default: false,
+        },
+      },
+      required: ['domain'],
     },
   },
   {
@@ -282,6 +308,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'optimize_adstxt':
         result = await optimizeAdsTxt(args || {});
+        break;
+
+      case 'optimize_adstxt_by_domain':
+        result = await optimizeAdsTxtByDomain(args || {});
         break;
 
       case 'get_adstxt_cache':

@@ -144,7 +144,59 @@ Optimizes ads.txt content with two levels of optimization.
 - Identify missing sellers.json entries
 - Add certification authority IDs
 
-### 4. get_adstxt_cache
+### 3b. optimize_adstxt_by_domain ⭐ Recommended
+
+Optimizes ads.txt by domain (automatically fetches from cache). More efficient than fetching content separately.
+
+**Input:**
+```typescript
+{
+  domain: string;               // Publisher domain
+  level?: 'level1' | 'level2';  // Optimization level (default: 'level1')
+  force?: boolean;              // Force refresh from source (default: false)
+}
+```
+
+**Backend APIs:**
+1. `GET /api/adsTxtCache/domain/:domain` - Fetch cached ads.txt
+2. `POST /api/adsTxt/optimize` - Optimize content
+
+**Output:**
+```typescript
+{
+  success: boolean;
+  data: {
+    optimized_content: string;
+    original_length: number;
+    optimized_length: number;
+    domain: string;
+    fetched_at: string;
+    categories?: {              // Only for level2
+      other: number;
+      confidential: number;
+      missing_seller_id: number;
+      no_seller_json: number;
+    };
+    execution_time_ms: number;
+  }
+}
+```
+
+**Performance Benefits:**
+- ~50% faster than separate fetch + optimize
+- Reduced data transfer (no client-side content handling)
+- Single tool call instead of two
+
+**Use Cases:**
+- Domain-based optimization workflows
+- Automated optimization pipelines
+- Batch processing multiple domains
+
+### 4. optimize_adstxt_by_domain
+
+(See 3b above)
+
+### 5. get_adstxt_cache
 
 Retrieves cached ads.txt content for a domain.
 
@@ -176,7 +228,7 @@ Retrieves cached ads.txt content for a domain.
 - Compare submitted entries with existing ads.txt
 - Analyze publisher's current advertising relationships
 
-### 5. get_sellers_json
+### 6. get_sellers_json
 
 Retrieves sellers.json data for an advertising system domain.
 
@@ -215,7 +267,7 @@ Retrieves sellers.json data for an advertising system domain.
 - Check seller types (PUBLISHER, INTERMEDIARY, BOTH)
 - Identify confidential sellers
 
-### 6. get_sellers_json_metadata
+### 7. get_sellers_json_metadata
 
 Retrieves only metadata from sellers.json (without full seller list).
 
@@ -249,7 +301,7 @@ Retrieves only metadata from sellers.json (without full seller list).
 - Get contact information for an ad system
 - Verify TAG-ID or other identifiers
 
-### 7. search_sellers_batch
+### 8. search_sellers_batch
 
 High-performance batch search for multiple seller IDs in a single domain.
 
@@ -280,7 +332,7 @@ High-performance batch search for multiple seller IDs in a single domain.
 - Bulk verification for ads.txt optimization
 - Performance-optimized seller lookups
 
-### 8. get_seller_by_id
+### 9. get_seller_by_id
 
 Search for a specific seller ID in an ad system's sellers.json.
 
@@ -310,7 +362,7 @@ Search for a specific seller ID in an ad system's sellers.json.
 - Get seller details and type
 - Check confidentiality status
 
-### 9. get_domain_info
+### 10. get_domain_info
 
 Get comprehensive domain information in a single API call.
 
@@ -350,7 +402,7 @@ Get comprehensive domain information in a single API call.
 - Reduces API calls by 60-70%
 - Quick domain overview
 
-### 10. get_batch_domain_info
+### 11. get_batch_domain_info
 
 Get information for multiple domains in a single request.
 
@@ -384,7 +436,7 @@ Get information for multiple domains in a single request.
 - Reduces API calls by 90%+
 - Generate summary statistics
 
-### 11. get_error_help
+### 12. get_error_help
 
 Get detailed help information for ads.txt validation errors.
 

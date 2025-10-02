@@ -200,6 +200,37 @@ Optimizes ads.txt with two optimization levels.
 }
 ```
 
+### optimize_adstxt_by_domain
+
+**Recommended:** Optimizes ads.txt by domain (automatically fetches from cache). More efficient than fetching content separately.
+
+```typescript
+// Input
+{
+  domain: string;               // Publisher domain
+  level?: 'level1' | 'level2';  // Default: 'level1'
+  force?: boolean;              // Force refresh (default: false)
+}
+
+// Output
+{
+  success: boolean;
+  data: {
+    optimized_content: string;
+    original_length: number;
+    optimized_length: number;
+    domain: string;
+    fetched_at: string;
+    categories?: {              // Level 2 only
+      other: number;
+      confidential: number;
+      missing_seller_id: number;
+      no_seller_json: number;
+    }
+  }
+}
+```
+
 ### get_adstxt_cache
 
 Retrieves cached ads.txt for a domain.
@@ -397,14 +428,24 @@ Agent: Uses validate_adstxt tool
 Result: Detailed validation report with errors and warnings
 ```
 
-### Example 2: Optimize ads.txt
+### Example 2: Optimize ads.txt (Recommended approach)
 
 ```
 User: "Optimize my ads.txt file at example.com"
 Agent:
-  1. Calls get_adstxt_cache to fetch current ads.txt
-  2. Calls optimize_adstxt with level2
-  3. Returns categorized, optimized content
+  1. Calls optimize_adstxt_by_domain with domain='example.com', level='level2'
+  2. Returns categorized, optimized content
+
+Performance: Single API call, ~50% faster than separate fetch + optimize
+```
+
+### Example 2b: Optimize ads.txt (Alternative approach)
+
+```
+User: "Optimize this ads.txt content: [paste content]"
+Agent:
+  1. Calls optimize_adstxt with provided content and level2
+  2. Returns categorized, optimized content
 ```
 
 ### Example 3: Verify seller relationships

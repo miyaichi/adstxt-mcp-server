@@ -25,9 +25,50 @@ PostgreSQL Database (Cache: ads.txt, sellers.json)
 
 ## MCP Tools
 
-### 1. validate_adstxt
+### 1. validate_adstxt_quick
 
-Validates ads.txt content with detailed error reporting and sellers.json cross-checking.
+Fast syntax-only validation without database queries or sellers.json cross-checking.
+
+**Input:**
+```typescript
+{
+  content: string;              // ads.txt file content
+  checkDuplicates?: boolean;    // Check for duplicates (default: true)
+}
+```
+
+**Backend API:** `POST /api/v1/adstxt/validate/quick`
+
+**Output:**
+```typescript
+{
+  success: boolean;
+  data: {
+    isValid: boolean;
+    records: ParsedAdsTxtRecord[];
+    errors: ValidationError[];
+    warnings: ValidationWarning[];
+    statistics: {
+      totalLines: number;
+      validRecords: number;
+      invalidRecords: number;
+      variables: number;
+      comments: number;
+      duplicates: number;
+    }
+  }
+}
+```
+
+**Use Cases:**
+- Real-time validation in editors
+- Quick syntax checking before full validation
+- Fast duplicate detection
+- Performance: 10-20x faster than full validation
+
+### 2. validate_adstxt
+
+Full validation with detailed error reporting and sellers.json cross-checking.
 
 **Input:**
 ```typescript
@@ -53,12 +94,12 @@ Validates ads.txt content with detailed error reporting and sellers.json cross-c
 ```
 
 **Use Cases:**
-- Validate ads.txt syntax and format
+- Comprehensive ads.txt validation
 - Check for duplicate entries
 - Cross-reference with existing publisher ads.txt
 - Verify account IDs against sellers.json
 
-### 2. optimize_adstxt
+### 3. optimize_adstxt
 
 Optimizes ads.txt content with two levels of optimization.
 
@@ -103,7 +144,7 @@ Optimizes ads.txt content with two levels of optimization.
 - Identify missing sellers.json entries
 - Add certification authority IDs
 
-### 3. get_adstxt_cache
+### 4. get_adstxt_cache
 
 Retrieves cached ads.txt content for a domain.
 
@@ -135,7 +176,7 @@ Retrieves cached ads.txt content for a domain.
 - Compare submitted entries with existing ads.txt
 - Analyze publisher's current advertising relationships
 
-### 4. get_sellers_json
+### 5. get_sellers_json
 
 Retrieves sellers.json data for an advertising system domain.
 
@@ -174,7 +215,7 @@ Retrieves sellers.json data for an advertising system domain.
 - Check seller types (PUBLISHER, INTERMEDIARY, BOTH)
 - Identify confidential sellers
 
-### 5. get_sellers_json_metadata
+### 6. get_sellers_json_metadata
 
 Retrieves only metadata from sellers.json (without full seller list).
 
@@ -208,7 +249,7 @@ Retrieves only metadata from sellers.json (without full seller list).
 - Get contact information for an ad system
 - Verify TAG-ID or other identifiers
 
-### 6. search_sellers_batch
+### 7. search_sellers_batch
 
 High-performance batch search for multiple seller IDs in a single domain.
 
@@ -239,7 +280,7 @@ High-performance batch search for multiple seller IDs in a single domain.
 - Bulk verification for ads.txt optimization
 - Performance-optimized seller lookups
 
-### 7. get_seller_by_id
+### 8. get_seller_by_id
 
 Search for a specific seller ID in an ad system's sellers.json.
 
@@ -269,19 +310,123 @@ Search for a specific seller ID in an ad system's sellers.json.
 - Get seller details and type
 - Check confidentiality status
 
+### 9. get_domain_info
+
+Get comprehensive domain information in a single API call.
+
+**Input:**
+```typescript
+{
+  domain: string;               // Domain to query
+}
+```
+
+**Backend API:** `GET /api/v1/domains/:domain/info`
+
+**Output:**
+```typescript
+{
+  success: boolean;
+  data: {
+    domain: string;
+    ads_txt: {
+      exists: boolean;
+      last_fetched?: string;
+      status: string;
+      record_count?: number;
+    };
+    sellers_json: {
+      exists: boolean;
+      last_fetched?: string;
+      status: string;
+      seller_count?: number;
+    };
+  }
+}
+```
+
+**Use Cases:**
+- Get both ads.txt and sellers.json status in one call
+- Reduces API calls by 60-70%
+- Quick domain overview
+
+### 10. get_batch_domain_info
+
+Get information for multiple domains in a single request.
+
+**Input:**
+```typescript
+{
+  domains: string[];            // Array of domains (max 50)
+}
+```
+
+**Backend API:** `POST /api/v1/domains/batch/info`
+
+**Output:**
+```typescript
+{
+  success: boolean;
+  data: {
+    domains: DomainInfo[];
+    summary: {
+      total_domains: number;
+      with_ads_txt: number;
+      with_sellers_json: number;
+      with_both: number;
+    };
+  }
+}
+```
+
+**Use Cases:**
+- Bulk domain analysis
+- Reduces API calls by 90%+
+- Generate summary statistics
+
+### 11. get_error_help
+
+Get detailed help information for ads.txt validation errors.
+
+**Input:**
+```typescript
+{
+  errorCode?: string;           // Optional: specific error code
+  language?: 'en' | 'ja';       // Language (default: 'en')
+}
+```
+
+**Backend API:** `GET /help/{language}/warnings.md`
+
+**Output:**
+```typescript
+{
+  success: boolean;
+  data: {
+    content: string;            // Markdown help content
+    url?: string;               // Link to specific error section
+  }
+}
+```
+
+**Use Cases:**
+- Provide context-aware error explanations
+- Support multiple languages
+- Link to detailed documentation
+- Improve user understanding of validation issues
+
 ## Backend API Reference
 
-### Current Endpoints
+### Core v1 Endpoints (Implemented)
 
-#### Ads.txt APIs
-- `POST /api/adsTxt/process` - Validate ads.txt content
-- `POST /api/adsTxt/optimize` - Optimize ads.txt content
-- `GET /api/adsTxtCache/domain/:domain` - Get cached ads.txt
+#### Validation APIs
+- `POST /api/v1/adstxt/validate/quick` - Quick validation (10-20x faster)
+
+#### Domain APIs
+- `GET /api/v1/domains/:domain/info` - Domain info (60-70% fewer calls)
+- `POST /api/v1/domains/batch/info` - Batch domain info (90%+ fewer calls)
 
 #### Sellers.json APIs
-- `GET /api/sellersJson/:domain` - Get full sellers.json
-- `GET /api/sellersJson/:domain/metadata` - Get metadata only
-- `GET /api/sellersJson/:domain/seller/:sellerId` - Search single seller
 - `POST /api/v1/sellersjson/:domain/sellers/batch` - Batch seller search
 - `POST /api/v1/sellersjson/batch/parallel` - Parallel batch search
 - `POST /api/v1/sellersjson/:domain/sellers/batch/stream` - Streaming search
@@ -290,106 +435,48 @@ Search for a specific seller ID in an ad system's sellers.json.
 - `GET /api/v1/sellersjson/health` - System health check
 - `GET /api/v1/sellersjson/stats` - Performance statistics
 
-### Recommended Additional APIs
+### Legacy Endpoints
 
-To better support MCP server functionality, consider adding these endpoints:
+#### Ads.txt APIs
+- `POST /api/adsTxt/process` - Full validation with sellers.json
+- `POST /api/adsTxt/optimize` - Optimize ads.txt content
+- `GET /api/adsTxtCache/domain/:domain` - Get cached ads.txt
 
-#### 1. Lightweight Validation API
-**Endpoint:** `POST /api/adsTxt/validate/quick`
+#### Sellers.json APIs
+- `GET /api/sellersJson/:domain` - Get full sellers.json
+- `GET /api/sellersJson/:domain/metadata` - Get metadata only
+- `GET /api/sellersJson/:domain/seller/:sellerId` - Search single seller
 
-**Purpose:** Fast syntax-only validation without sellers.json cross-checking
+### Help Resources
+- `GET /help/en/warnings.md` - Error help (English)
+- `GET /help/ja/warnings.md` - Error help (Japanese)
 
-**Benefits:**
-- Faster response for simple validation
-- Reduced database load
-- Suitable for real-time validation UX
+### Future Endpoint Recommendations
 
-#### 2. Domain Info API
-**Endpoint:** `GET /api/domains/:domain/info`
-
-**Purpose:** Get consolidated information about a domain
-
-**Response:**
-```typescript
-{
-  domain: string;
-  has_adstxt: boolean;
-  adstxt_last_fetched?: string;
-  has_sellers_json: boolean;
-  sellers_json_last_fetched?: string;
-  seller_count?: number;
-}
-```
-
-**Benefits:**
-- Single API call for domain overview
-- Useful for batch domain analysis
-- Helps MCP server decide which APIs to call
-
-#### 3. Batch Domain Validation API
-**Endpoint:** `POST /api/adsTxt/validate/batch`
+#### 1. Batch Validation API
+**Endpoint:** `POST /api/v1/adstxt/validate/batch`
 
 **Purpose:** Validate ads.txt entries against multiple domains at once
-
-**Input:**
-```typescript
-{
-  records: Array<{
-    domain: string;
-    account_id: string;
-    relationship: 'DIRECT' | 'RESELLER';
-  }>;
-}
-```
 
 **Benefits:**
 - Efficient bulk validation
 - Useful for validating entire ads.txt files
 - Reduces round-trip API calls
 
-#### 4. Ads.txt Diff API
-**Endpoint:** `POST /api/adsTxt/diff`
+#### 2. Ads.txt Diff API
+**Endpoint:** `POST /api/v1/adstxt/diff`
 
 **Purpose:** Compare two ads.txt contents and show differences
-
-**Input:**
-```typescript
-{
-  original: string;
-  modified: string;
-}
-```
-
-**Output:**
-```typescript
-{
-  added: ParsedAdsTxtRecord[];
-  removed: ParsedAdsTxtRecord[];
-  unchanged: ParsedAdsTxtRecord[];
-  statistics: {
-    additions: number;
-    deletions: number;
-  }
-}
-```
 
 **Benefits:**
 - Help users understand changes
 - Useful for approval workflows
 - Supports audit trails
 
-#### 5. Sellers.json Search API
-**Endpoint:** `POST /api/sellersJson/search`
+#### 3. Cross-Domain Seller Search API
+**Endpoint:** `POST /api/v1/sellersjson/search`
 
 **Purpose:** Search for sellers across multiple domains
-
-**Input:**
-```typescript
-{
-  domains: string[];
-  seller_id: string;
-}
-```
 
 **Benefits:**
 - Find which domains list a specific seller ID
@@ -489,30 +576,32 @@ The backend implements rate limiting for:
 
 ### Phase 1: Core MCP Tools (MVP)
 - [x] Backend API architecture review
+- [x] Backend v1 API implementation (Quick validation, Domain info, Batch domain info)
+- [ ] Implement validate_adstxt_quick tool
 - [ ] Implement validate_adstxt tool
 - [ ] Implement optimize_adstxt tool
 - [ ] Implement get_adstxt_cache tool
 - [ ] Implement get_sellers_json tool
 - [ ] Basic error handling
 
-### Phase 2: Advanced Features
+### Phase 2: Domain & Help Tools
+- [ ] Implement get_domain_info tool
+- [ ] Implement get_batch_domain_info tool
+- [ ] Implement get_error_help tool
 - [ ] Implement batch search tools
 - [ ] Implement metadata-only tools
+
+### Phase 3: Advanced Features
 - [ ] Add caching layer in MCP server
 - [ ] Performance optimization
-
-### Phase 3: Additional APIs (Backend)
-- [ ] Quick validation API
-- [ ] Domain info API
-- [ ] Batch validation API
-- [ ] Diff API
-- [ ] Cross-domain search API
+- [ ] Rate limiting handling
+- [ ] Comprehensive error handling
 
 ### Phase 4: Production Ready
-- [ ] Comprehensive error handling
-- [ ] Rate limiting handling
 - [ ] Monitoring and logging
 - [ ] Documentation and examples
+- [ ] Testing (unit, integration, e2e)
+- [ ] Deployment guide
 
 ## Testing Strategy
 

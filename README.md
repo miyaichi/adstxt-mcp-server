@@ -71,14 +71,14 @@ This MCP server acts as a bridge between AI agents (like Claude) and the [Ads.tx
 ### From npm (when published)
 
 ```bash
-npm install -g adstxt-manager-mcp-server
+npm install -g adstxt-mcp-server
 ```
 
 ### From Source
 
 ```bash
-git clone https://github.com/miyaichi/adstxt-manager-mcp-server.git
-cd adstxt-manager-mcp-server
+git clone https://github.com/miyaichi/adstxt-mcp-server.git
+cd adstxt-mcp-server
 npm install
 npm run build
 ```
@@ -94,9 +94,9 @@ Add to your MCP settings file (e.g., `claude_desktop_config.json`):
   "mcpServers": {
     "adstxt-manager": {
       "command": "node",
-      "args": ["/path/to/adstxt-manager-mcp-server/dist/index.js"],
+      "args": ["/path/to/adstxt-mcp-server/dist/index.js"],
       "env": {
-        "API_BASE_URL": "http://localhost:3001",
+        "API_BASE_URL": "https://adstxt-manager.jp",
         "API_TIMEOUT": "30000",
         "API_RETRIES": "3"
       }
@@ -109,15 +109,46 @@ Add to your MCP settings file (e.g., `claude_desktop_config.json`):
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `API_BASE_URL` | Ads.txt Manager backend URL | `http://localhost:3001` |
+| `API_BASE_URL` | Ads.txt Manager backend URL | `https://adstxt-manager.jp` |
 | `API_TIMEOUT` | Request timeout in milliseconds | `30000` |
 | `API_RETRIES` | Number of retry attempts | `3` |
 
 ## MCP Tools
 
+### validate_adstxt_quick
+
+Fast syntax-only validation without database queries (10-20x faster).
+
+```typescript
+// Input
+{
+  content: string;              // ads.txt file content
+  checkDuplicates?: boolean;    // Check for duplicates (default: true)
+}
+
+// Output
+{
+  success: boolean;
+  data: {
+    isValid: boolean;
+    records: ParsedAdsTxtRecord[];
+    errors: ValidationError[];
+    warnings: ValidationWarning[];
+    statistics: {
+      totalLines: number;
+      validRecords: number;
+      invalidRecords: number;
+      variables: number;
+      comments: number;
+      duplicates: number;
+    }
+  }
+}
+```
+
 ### validate_adstxt
 
-Validates ads.txt content with optional sellers.json cross-checking.
+Full validation with sellers.json cross-checking.
 
 ```typescript
 // Input
@@ -277,6 +308,83 @@ Searches for a specific seller ID.
 }
 ```
 
+### get_domain_info
+
+Get comprehensive domain information (ads.txt + sellers.json) in single call.
+
+```typescript
+// Input
+{
+  domain: string;
+}
+
+// Output
+{
+  success: boolean;
+  data: {
+    domain: string;
+    ads_txt: {
+      exists: boolean;
+      last_fetched?: string;
+      status: string;
+      record_count?: number;
+    };
+    sellers_json: {
+      exists: boolean;
+      last_fetched?: string;
+      status: string;
+      seller_count?: number;
+    };
+  }
+}
+```
+
+### get_batch_domain_info
+
+Get information for multiple domains (up to 50) in a single request.
+
+```typescript
+// Input
+{
+  domains: string[];            // Max 50 domains
+}
+
+// Output
+{
+  success: boolean;
+  data: {
+    domains: DomainInfo[];
+    summary: {
+      total_domains: number;
+      with_ads_txt: number;
+      with_sellers_json: number;
+      with_both: number;
+    };
+  }
+}
+```
+
+### get_error_help
+
+Get detailed help information for ads.txt validation errors and warnings.
+
+```typescript
+// Input
+{
+  errorCode?: string;           // Optional: specific error code (e.g., "11010")
+  language?: 'en' | 'ja';       // Language (default: 'en')
+}
+
+// Output
+{
+  success: boolean;
+  data: {
+    content: string;            // Markdown help content
+    url?: string;               // Link to specific error section
+  }
+}
+```
+
 ## Usage Examples
 
 ### Example 1: Validate ads.txt
@@ -320,33 +428,23 @@ Agent:
 
 This MCP server requires a running instance of the Ads.txt Manager backend with the following endpoints:
 
-### Required Endpoints
-- `POST /api/adsTxt/process` - Validate ads.txt
+### Core Endpoints (v1)
+- `POST /api/v1/adstxt/validate/quick` - Quick validation (10-20x faster)
+- `GET /api/v1/domains/:domain/info` - Domain info (60-70% fewer calls)
+- `POST /api/v1/domains/batch/info` - Batch domain info (90%+ fewer calls)
+- `POST /api/v1/sellersjson/:domain/sellers/batch` - Batch seller search
+
+### Legacy Endpoints
+- `POST /api/adsTxt/process` - Full validation with sellers.json
 - `POST /api/adsTxt/optimize` - Optimize ads.txt
 - `GET /api/adsTxtCache/domain/:domain` - Get cached ads.txt
 - `GET /api/sellersJson/:domain` - Get sellers.json
 - `GET /api/sellersJson/:domain/metadata` - Get metadata only
 - `GET /api/sellersJson/:domain/seller/:sellerId` - Search seller
-- `POST /api/v1/sellersjson/:domain/sellers/batch` - Batch search
 
-### Recommended Additional Endpoints
-
-To maximize MCP server capabilities, consider implementing:
-
-1. **Quick Validation API** - `POST /api/adsTxt/validate/quick`
-   - Fast syntax-only validation without sellers.json cross-checking
-
-2. **Domain Info API** - `GET /api/domains/:domain/info`
-   - Consolidated domain information in a single call
-
-3. **Batch Validation API** - `POST /api/adsTxt/validate/batch`
-   - Validate multiple records at once
-
-4. **Diff API** - `POST /api/adsTxt/diff`
-   - Compare two ads.txt versions
-
-5. **Cross-Domain Search** - `POST /api/sellersJson/search`
-   - Find seller across multiple domains
+### Help Resources
+- `GET /help/en/warnings.md` - Error help (English)
+- `GET /help/ja/warnings.md` - Error help (Japanese)
 
 See [AGENT.md](./AGENT.md) for detailed specifications.
 
@@ -395,13 +493,15 @@ All tools return a consistent error format:
 ### Project Structure
 
 ```
-adstxt-manager-mcp-server/
+adstxt-mcp-server/
 ├── src/
 │   ├── index.ts              # MCP server entry point
 │   ├── tools/                # MCP tool implementations
 │   │   ├── validate.ts
 │   │   ├── optimize.ts
-│   │   └── ...
+│   │   ├── domain.ts
+│   │   ├── sellers.ts
+│   │   └── help.ts
 │   ├── api/                  # Backend API client
 │   │   └── client.ts
 │   └── types/                # TypeScript definitions
@@ -514,8 +614,8 @@ MIT License - see [LICENSE](../LICENSE) file
 
 ## Support
 
-- **Issues**: https://github.com/miyaichi/adstxt-manager-mcp-server/issues
-- **Discussions**: https://github.com/miyaichi/adstxt-manager-mcp-server/discussions
+- **Issues**: https://github.com/miyaichi/adstxt-mcp-server/issues
+- **Discussions**: https://github.com/miyaichi/adstxt-mcp-server/discussions
 - **Documentation**: [AGENT.md](./AGENT.md)
 
 ## Roadmap

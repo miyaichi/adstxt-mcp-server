@@ -97,6 +97,7 @@ Add to your MCP settings file (e.g., `claude_desktop_config.json`):
       "args": ["/path/to/adstxt-mcp-server/dist/index.js"],
       "env": {
         "API_BASE_URL": "https://adstxt-manager.jp",
+        "API_KEY": "your-api-key-here",
         "API_TIMEOUT": "30000",
         "API_RETRIES": "3"
       }
@@ -107,11 +108,12 @@ Add to your MCP settings file (e.g., `claude_desktop_config.json`):
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `API_BASE_URL` | Ads.txt Manager backend URL | `https://adstxt-manager.jp` |
-| `API_TIMEOUT` | Request timeout in milliseconds | `30000` |
-| `API_RETRIES` | Number of retry attempts | `3` |
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `API_BASE_URL` | Ads.txt Manager backend URL | `https://adstxt-manager.jp` | No |
+| `API_KEY` | API key for authentication | - | **Yes** |
+| `API_TIMEOUT` | Request timeout in milliseconds | `30000` | No |
+| `API_RETRIES` | Number of retry attempts | `3` | No |
 
 ## MCP Tools
 
@@ -590,11 +592,20 @@ npm run test:e2e
 
 ## Security
 
-- **No authentication required**: Public APIs
-- **Input validation**: All inputs sanitized
-- **HTTPS recommended**: Use secure connections in production
-- **Rate limiting**: Handled by backend
-- **No data storage**: MCP server is stateless
+- **API Key authentication**: Required for all API calls
+- **Environment variables**: API key stored securely in environment, never in code
+- **Input validation**: All inputs sanitized using Zod schemas
+- **HTTPS only**: All API calls use secure HTTPS connections
+- **Rate limiting**: Handled by backend API
+- **No data storage**: MCP server is stateless, no caching of sensitive data
+- **Retry logic**: Automatic retry for transient errors with exponential backoff
+
+### Best Practices
+
+1. **Never commit API keys**: Keep API_KEY in environment variables only
+2. **Rotate keys regularly**: Request new API keys periodically
+3. **Limit key scope**: Use separate keys for different environments
+4. **Monitor usage**: Check API usage logs for unexpected activity
 
 ## License
 

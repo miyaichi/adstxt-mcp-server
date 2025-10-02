@@ -346,6 +346,12 @@ async function main() {
   // Log to stderr (stdout is used for MCP protocol)
   console.error('Ads.txt Manager MCP Server running on stdio');
   console.error(`API Base URL: ${process.env.API_BASE_URL || 'https://adstxt-manager.jp'}`);
+  console.error(`API Key: ${process.env.API_KEY ? '***configured***' : '***NOT SET***'}`);
+
+  if (!process.env.API_KEY) {
+    console.error('⚠️  WARNING: API_KEY environment variable is not set');
+    console.error('⚠️  Most API calls will fail without authentication');
+  }
 }
 
 main().catch((error) => {

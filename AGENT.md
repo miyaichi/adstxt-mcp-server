@@ -490,10 +490,20 @@ Get detailed help information for ads.txt validation errors.
 ```typescript
 {
   apiBaseUrl: string;           // Backend API base URL
+  apiKey: string;               // API key for authentication (required)
   timeout: number;              // Request timeout (ms)
   retries: number;              // Number of retries for failed requests
 }
 ```
+
+### Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `API_BASE_URL` | Backend API base URL | No (default: https://adstxt-manager.jp) |
+| `API_KEY` | API key for authentication | **Yes** |
+| `API_TIMEOUT` | Request timeout in milliseconds | No (default: 30000) |
+| `API_RETRIES` | Number of retry attempts | No (default: 3) |
 
 ### Rate Limiting
 

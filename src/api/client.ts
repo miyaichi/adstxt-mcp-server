@@ -10,19 +10,31 @@ export class ApiClient {
   private baseUrl: string;
   private timeout: number;
   private retries: number;
+  private apiKey?: string;
 
   constructor() {
     this.baseUrl = process.env.API_BASE_URL || 'https://adstxt-manager.jp';
     this.timeout = parseInt(process.env.API_TIMEOUT || '30000', 10);
     this.retries = parseInt(process.env.API_RETRIES || '3', 10);
+    this.apiKey = process.env.API_KEY;
+
+    if (!this.apiKey) {
+      console.error('Warning: API_KEY environment variable is not set');
+    }
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'User-Agent': 'adstxt-mcp-server/0.1.0',
+    };
+
+    if (this.apiKey) {
+      headers['X-API-Key'] = this.apiKey;
+    }
 
     this.client = axios.create({
       baseURL: this.baseUrl,
       timeout: this.timeout,
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'adstxt-mcp-server/0.1.0',
-      },
+      headers,
     });
 
     // Add response interceptor for error handling

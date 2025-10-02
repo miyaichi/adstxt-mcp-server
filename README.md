@@ -1,4 +1,4 @@
-# Ads.txt Manager MCP Server
+# Ads.txt MCP Server
 
 A Model Context Protocol (MCP) server that provides AI agents with tools to validate, optimize, and analyze ads.txt and sellers.json files for digital advertising transparency.
 
